@@ -1,0 +1,40 @@
+version: 2
+
+sources:
+  - name: local_bike_raw
+    database: project-2c81eac3-8a63-4c9f-a87
+    schema: local_bike_raw
+    description: "Raw data from Local Bike CSV files ingested via Fivetran into BigQuery."
+
+    tables:
+
+      - name: brands_brands_csv
+        description: "Raw brands data. One row per brand."
+
+      - name: categories_categories_csv
+        description: "Raw categories data. One row per category."
+
+      - name: customers_customers_csv
+        description: "Raw customers data including contact and address information. One row per customer."
+
+      - name: stores_stores_csv
+        description: "Raw stores data. One row per store."
+
+      - name: staffs_staffs_csv
+        description: "Raw staffs data. One row per staff member."
+
+      - name: products_products_csv
+        description: "Raw products data. One row per product.
+        Contains product specifications, pricing, and references to brand and category."
+
+      - name: stocks_stocks_csv
+        description: "Raw stock data : Inventory levels. One row per product per store 
+        (current snapshot).Represents current stock quantities available for sale."
+
+      - name: orders_orders_csv
+        description: "Raw orders data : Order header information. One row per order.
+                    Contains order status, dates, and references to customer, store, and staff. "
+
+      - name: order_items_order_items_csv
+        description: "Raw order items data : Order line items. One row per product in an order. Contains quantity, price, and discount information. Composite primary key: (order_id, item_id) "
+
