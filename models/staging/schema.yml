@@ -1,0 +1,368 @@
+version: 2
+
+models:
+      - name: stg_localbike__brands
+        description: "Brands reference data from raw layer. One row per brand."
+        columns:
+          - name: brand_id
+            description: "Unique identifier for each brand (primary key)."
+            tests:
+              - not_null
+              - unique
+
+          - name: brand_name
+            description: "Name of the brand."
+            tests:
+              - not_null
+
+
+      - name: stg_localbike__categories
+        description: "Product categories reference data from raw layer. One row per category."
+        columns:
+          - name: category_id
+            description: "Unique identifier for each category (primary key)."
+            tests:
+              - not_null
+              - unique
+
+          - name: category_name
+            description: "Name of the product category."
+            tests:
+              - not_null
+
+
+      - name: stg_localbike__customers
+        description: "Customers data including contact and address information. One row per customer."
+        columns:
+          - name: customer_id
+            description: "Unique identifier for each customer (primary key)."
+            tests:
+              - not_null
+              - unique
+
+          - name: customer_first_name
+            description: "Customer first name."
+            tests:
+              - not_null
+
+          - name: customer_last_name
+            description: "Customer last name."
+            tests:
+              - not_null
+
+          - name: customer_full_name
+            description: "Customer full name (first + last)."
+            tests:
+              - not_null
+
+          - name: customer_phone
+            description: "Customer phone number."
+
+          - name: customer_email
+            description: "Customer email address."
+            tests:
+              - not_null
+
+          - name: customer_street
+            description: "Customer street address."
+
+          - name: customer_city
+            description: "City name."
+
+          - name: customer_state
+            description: "State abbreviation."
+
+          - name: customer_zip_code
+            description: "Customer ZIP code."
+
+
+      - name: stg_localbike__stores
+        description: "Stores data. One row per store."
+        columns:
+          - name: store_id
+            description: "Unique identifier for each store (primary key)."
+            tests:
+              - not_null
+              - unique
+
+          - name: store_name
+            description: "Store name."
+            tests:
+              - not_null
+              - unique
+
+          - name: store_phone
+            description: "Store phone number."
+
+          - name: store_email
+            description: "Store email address."
+            tests:
+              - not_null
+              - unique  
+
+          - name: store_street
+            description: "Street address."
+            tests:
+              - not_null
+
+          - name: store_city
+            description: "City name."
+            tests:
+              - not_null
+
+          - name: store_state
+            description: "State abbreviation."
+            tests:
+              - not_null
+
+          - name: store_zip_code
+            description: "Store ZIP code."
+            tests:
+              - not_null
+
+
+      - name: stg_localbike__staffs
+        description: "Staffs data. One row per staff member."
+        columns:
+          - name: staff_id
+            description: "Unique identifier for each staff member (primary key)."
+            tests:
+              - not_null
+              - unique
+
+          - name: staff_first_name
+            description: "Staff first name."
+            tests:
+              - not_null
+
+          - name: staff_last_name
+            description: "Staff last name."
+            tests:
+              - not_null
+
+          - name: staff_full_name
+            description: "Staff full name (first + last)."
+            tests:
+              - not_null
+
+          - name: staff_email
+            description: "Staff email address."
+            tests:
+              - not_null
+              - unique
+
+          - name: staff_phone
+            description: "Staff phone number."
+
+          - name: is_active
+            tests:
+              - not_null
+
+          - name: store_id
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: ref('stg_localbike__stores')
+                    field: store_id
+
+          - name: manager_id
+            description: "Identifier of the staff manager."
+
+
+      - name: stg_localbike__products
+        description: "Products data. One row per product.
+Contains product specifications, pricing, and references to brand and category."
+        columns:
+          - name: product_id
+            description: "Unique identifier for each product (primary key)."
+            tests:
+              - not_null
+              - unique
+
+          - name: product_name
+            description: "Product name."
+            tests:
+              - not_null
+
+          - name: brand_id
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: ref('stg_localbike__brands')
+                    field: brand_id
+
+          - name: category_id
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: ref('stg_localbike__categories')
+                    field: category_id
+
+          - name: model_year
+            description: "Product model year."
+            tests:
+              - not_null
+
+          - name: unit_price
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  arguments:
+                    expression: "> 0"
+
+
+      - name: stg_localbike__stocks
+        description: "Stock data : Inventory levels. One row per product per store 
+        (current snapshot).Represents current stock quantities available for sale."
+        columns:
+          - name: stocks_id
+            description: "Composite primary key (store_id + product_id)."
+            tests:
+              - not_null
+              - unique
+        
+          - name: store_id
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: ref('stg_localbike__stores')
+                    field: store_id
+          - name: product_id
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: ref('stg_localbike__products')
+                    field: product_id
+          - name: stock_quantity
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  arguments:
+                    expression: ">= 0"
+
+
+      - name: stg_localbike__orders
+        description: "Orders data : Order header information. One row per order.
+                    Contains order status, dates, and references to customer, store, and staff. "
+
+        columns:
+          - name: order_id
+            description: "Unique identifier for each order (primary key)."
+            tests:
+              - not_null
+              - unique
+
+          - name: customer_id
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: ref('stg_localbike__customers')
+                    field: customer_id
+          - name: order_status
+            tests:
+              - not_null
+
+
+          - name: order_created_at
+            description: "Date when the order was placed."
+            tests:
+              - not_null
+
+          - name: order_required_at
+            description: "Requested delivery date."
+
+          - name: shipped_at
+            description: "Date when the order was shipped."
+
+          - name: store_id
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: ref('stg_localbike__stores')
+                    field: store_id
+          - name: staff_id
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: ref('stg_localbike__staffs')
+                    field: staff_id
+
+
+      - name: stg_localbike__order_items
+        description: "Order items data : Order line items. One row per product in an order.
+                       Contains quantity, price, and discount information."
+        
+
+        columns:
+          - name: order_item_id
+            description: "Composite primary key (order_id + item_id)."
+            tests:
+              - not_null
+              - unique
+
+          - name: order_id
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: ref('stg_localbike__orders')
+                    field: order_id
+
+          - name: product_id
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: ref('stg_localbike__products')
+                    field: product_id
+
+          - name: order_item_quantity
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  arguments:
+                    expression: "> 0"
+          - name: unit_price
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  arguments:
+                    expression: "> 0"
+          - name: order_item_discount
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  arguments:
+                    expression: "BETWEEN 0 AND 1"
+
+          - name: gross_amount
+            description: "Gross amount before discount (quantity x unit_price)."
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  arguments:
+                    expression: "> 0"
+
+          - name: discount_amount
+            description: "Total discount amount (quantity x unit_price x discount)."
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  arguments:
+                    expression: ">= 0"
+
+          - name: revenue_net
+            description: "Net revenue after discount (quantity x unit_price x (1 - discount))."
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  arguments:
+                    expression: "> 0"
