@@ -1,0 +1,112 @@
+version: 2
+
+models:
+  - name: int_localbike__orders_aggregated
+    description: "Order-level aggregations from order items. One row per order."
+    columns:
+      - name: order_id
+        description: "Primary key. Foreign key to stg_localbike__orders."
+        tests:
+          - not_null
+          - unique
+
+      - name: customer_id
+        tests:
+          - not_null
+
+      - name: store_id
+        tests:
+          - not_null
+
+      - name: staff_id
+        tests:
+          - not_null
+
+      - name: order_created_at
+        tests:
+          - not_null
+
+      - name: total_revenue_net
+        description: "Total net revenue after discounts."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+
+      - name: total_items_quantity
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+
+      - name: total_gross_amount
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+
+      - name: total_discount_amount
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+  # --------------------------------------------------------------------------
+
+  - name: int_localbike_customer__aggregated
+    description: "Customer-level aggregations with RFM metrics. One row per customer."
+    columns:
+      - name: customer_id
+        description: "Primary key. Foreign key to stg_localbike__customers."
+        tests:
+          - not_null
+          - unique
+
+      - name: total_orders
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+
+      - name: avg_order_value
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+
+      - name: first_order_date
+        tests:
+          - not_null
+
+      - name: last_order_date
+        tests:
+          - not_null
+
+      - name: days_since_last_order
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: is_new_customer
+        tests:
+          - not_null
+
+      - name: is_returning_customer
+        tests:
+          - not_null
+
+      - name: is_high_value_customer
+        tests:
+          - not_null
+
+      - name: is_at_risk_customer
+        tests:
+          - not_null

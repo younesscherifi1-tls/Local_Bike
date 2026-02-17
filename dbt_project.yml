@@ -40,5 +40,15 @@ models:
     # Applies to all files under models/example/
     example:
       +materialized: table
+
     staging:
       +materialized: view
+      +schema: stg  # → dbt_ych_stg_local_bike
+
+    intermediate:
+      +materialized: view
+      +schema: int  # → dbt_ych_int_local_bike
+
+    mart:
+      +materialized: table
+      +schema: marts # → dbt_ych_marts_local_bike
