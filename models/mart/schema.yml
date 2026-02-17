@@ -1,0 +1,288 @@
+version: 2
+
+models:
+  # ==========================================================================
+  # FACTS
+  # ==========================================================================
+
+  - name: mrt_localbike__fct_orders
+    description: "Order-level fact table with aggregated metrics. One row per order. Grain: order."
+    columns:
+      - name: order_id
+        description: "Primary key."
+        tests:
+          - not_null
+          - unique
+
+      - name: customer_id
+        description: "Foreign key to mrt_localbike__dim_customers."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('mrt_localbike__dim_customers')
+                field: customer_id
+
+      - name: store_id
+        description: "Foreign key to mrt_localbike__dim_stores."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('mrt_localbike__dim_stores')
+                field: store_id
+
+      - name: staff_id
+        description: "Foreign key to mrt_localbike__dim_staffs."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('mrt_localbike__dim_staffs')
+                field: staff_id
+
+      - name: order_created_at
+        tests:
+          - not_null
+
+      - name: order_status
+        tests:
+          - not_null
+
+
+      - name: total_revenue_net
+        description: "Net revenue after discounts (key metric)."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+
+      - name: total_items_quantity
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+
+  # --------------------------------------------------------------------------
+
+  - name: mrt_localbike__fct_order_items
+    description: "Order line item fact table. One row per product per order. Grain: order_item."
+    columns:
+      - name: order_item_id
+        description: "Primary key."
+        tests:
+          - not_null
+          - unique
+
+      - name: order_id
+        description: "Foreign key to mrt_localbike__fct_orders."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('mrt_localbike__fct_orders')
+                field: order_id
+
+      - name: product_id
+        description: "Foreign key to mrt_localbike__dim_products."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('mrt_localbike__dim_products')
+                field: product_id
+
+      - name: order_item_quantity
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+
+      - name: revenue_net
+        description: "Net revenue per line item (key metric)."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+
+      - name: gross_amount
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+
+      - name: discount_amount
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+  # --------------------------------------------------------------------------
+
+  - name: mrt_localbike__fct_stocks
+    description: "Inventory snapshot fact table. One row per product per store. Grain: store x product."
+    columns:
+      - name: stocks_id
+        description: "Primary key (composite store_id + product_id)."
+        tests:
+          - not_null
+          - unique
+
+      - name: store_id
+        description: "Foreign key to mrt_localbike__dim_stores."
+        tests:
+          - not_null
+
+      - name: product_id
+        description: "Foreign key to mrt_localbike__dim_products."
+        tests:
+          - not_null
+
+      - name: stock_quantity
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: stock_value
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: stock_status
+        tests:
+          - not_null
+
+
+  # ==========================================================================
+  # DIMENSIONS
+  # ==========================================================================
+
+  - name: mrt_localbike__dim_customers
+    description: "Customer dimension with descriptive attributes and RFM segmentation flags. One row per customer."
+    columns:
+      - name: customer_id
+        description: "Primary key."
+        tests:
+          - not_null
+          - unique
+
+      - name: customer_full_name
+        tests:
+          - not_null
+
+      - name: customer_email
+        tests:
+          - not_null
+
+      - name: is_new_customer
+        tests:
+          - not_null
+
+      - name: is_returning_customer
+        tests:
+          - not_null
+
+      - name: is_high_value_customer
+        tests:
+          - not_null
+
+      - name: is_at_risk_customer
+        tests:
+          - not_null
+
+  # --------------------------------------------------------------------------
+
+  - name: mrt_localbike__dim_products
+    description: "Product dimension with brand and category (denormalized). One row per product."
+    columns:
+      - name: product_id
+        description: "Primary key."
+        tests:
+          - not_null
+          - unique
+
+      - name: product_name
+        tests:
+          - not_null
+
+      - name: unit_price
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+
+      - name: brand_name
+        tests:
+          - not_null
+
+      - name: category_name
+        tests:
+          - not_null
+
+  # --------------------------------------------------------------------------
+
+  - name: mrt_localbike__dim_stores
+    description: "Store dimension. One row per store (3 stores: Santa Cruz, Baldwin, Rowlett)."
+    columns:
+      - name: store_id
+        description: "Primary key."
+        tests:
+          - not_null
+          - unique
+
+      - name: store_name
+        tests:
+          - not_null
+          - unique
+
+      - name: store_city
+        tests:
+          - not_null
+
+      - name: store_state
+        tests:
+          - not_null
+
+  # --------------------------------------------------------------------------
+
+  - name: mrt_localbike__dim_staffs
+    description: "Staff dimension with manager hierarchy resolved. One row per staff member."
+    columns:
+      - name: staff_id
+        description: "Primary key."
+        tests:
+          - not_null
+          - unique
+
+      - name: staff_full_name
+        tests:
+          - not_null
+
+      - name: staff_email
+        tests:
+          - not_null
+          - unique
+
+      - name: store_id
+        description: "Foreign key to mrt_localbike__dim_stores."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('mrt_localbike__dim_stores')
+                field: store_id
+
+      - name: is_active
+        tests:
+          - not_null
